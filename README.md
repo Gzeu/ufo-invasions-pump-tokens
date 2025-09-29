@@ -1,103 +1,160 @@
-# UFO Invasions: Missions & Rewards
+# 🛸 UFO Invasions: Pump Tokens - MVP
 
-## Cerințe
-- Node.js 18+
-- NPM/Yarn
-- Wallet (Metamask) pentru interacțiuni reale (nu e necesar în e2e)
-- Contract UFOInvasionsNFT + adresă în .env
+**Blockchain gaming platform cu mission system, rewards și leaderboard pe BNB Chain**
 
-## Setup
-1) Install:
-   ```bash
-   npm install
-   ```
-2) Config:
-   ```bash
-   cp .env.example .env
-   ```
-   Setează REACT_APP_CONTRACT_ADDRESS, REACT_APP_CHAIN_ID, REACT_APP_RPC_URL, REACT_APP_EXPLORER_URL
-3) Dev (MSW activ pentru /api/rewards):
-   ```bash
-   npm start
-   ```
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FGzeu%2Fufo-invasions-pump-tokens&branch=mvp-unified-deployment)
 
-## Structură
-- `src/context/RewardsContext.jsx` — state, claim single/batch, beam effect
-- `src/lib/rewardsService.js` — adapter API + Web3; suport E2E mock chain
-- `src/context/NotificationContext.jsx` — notificări unificate
-- `src/components/RewardsSection.jsx`, `RewardCard.jsx` — UI
-- `src/mocks/*` — MSW handlers pentru API
-- `src/lib/chain.js` — garduri chain/wallet
-- `src/lib/errors.js` — mapare erori
+## ✨ MVP Features
 
-## Testare
+### 🎮 Core Gaming
+- **Interactive games** cu reward system
+- **Mission tracking** și progress monitoring  
+- **NFT minting** pentru achievements
+- **Wallet integration** (MetaMask, WalletConnect)
 
-### Unit & Integration (Jest + RTL)
+### 💰 Reward System
+- **Multi-currency rewards:** USDT, UFO tokens, NFTs, Badges
+- **Automated distribution** via smart contracts
+- **Beam Technology:** Random airdrops pentru active users
+- **Expiry management** cu claim timeouts
+
+### 🏆 Leaderboard & Social
+- **Multi-category leaderboards:** Overall, Games, Trading, Referrals
+- **Real-time rankings** cu period filters
+- **Social integration:** Twitter, Discord, Telegram
+- **Badge system** pentru achievements
+
+### 🤖 Background Agents
+- **Mission Manager:** Tracks user progress și awards completion
+- **Reward Processor:** Distributes pending rewards  
+- **Beam Technology:** Generates random airdrops
+- **Orchestrator:** Coordinates all agent execution
+
+## 🚀 Quick Start
+
+### Development
 ```bash
-npm test
+# Clone și install
+git clone https://github.com/Gzeu/ufo-invasions-pump-tokens.git
+cd ufo-invasions-pump-tokens
+git checkout mvp-unified-deployment
+npm install
+
+# Environment setup
+cp .env.example .env.local
+# Edit .env.local with your MongoDB URI
+
+# Test database connection
+npm run db:test
+
+# Initialize database
+npm run db:init
+
+# Start development server
+npm run dev
 ```
 
-### E2E (Playwright)
-- Rulează:
-  ```bash
-  npm run e2e
-  ```
-- Rulează cu UI:
-  ```bash
-  npm run e2e:ui
-  ```
+### Production Deployment pe Vercel
+1. **Connect GitHub repo** în Vercel Dashboard
+2. **Set branch** la `mvp-unified-deployment` 
+3. **Configure MongoDB Atlas** prin Vercel Marketplace
+4. **Deploy și test** agents via `/api/agents/orchestrator`
 
-## Mock Chain (E2E)
-- `REACT_APP_E2E_MOCK_CHAIN=1` simulează tranzacțiile on-chain (fără wallet/RPC)
-- `claimOnChainSingle/Batch` returnează fake tx-uri deterministe
+Detailed guide: [DEPLOYMENT.md](./DEPLOYMENT.md)
 
-## Deploy (rezumat)
-1) Deploy contract pe chain dorit; setează adresa în .env
-2) Build frontend:
-   ```bash
-   npm run build
-   ```
-3) Deploy conținutul build/ la provider (S3/CloudFront, Vercel, Netlify, etc.)
+## 📊 API Endpoints
 
-## Troubleshooting
-- **Wallet not detected**: instalează Metamask
-- **Wrong network**: aplicația cere switch; dacă eșuează, adaugă chain-ul
-- **Insufficient funds**: alimentează wallet-ul cu gas token
+### Users
+- `POST /api/users/register` - Register new user
+- `GET /api/users/[walletAddress]` - Get user profile
+- `PATCH /api/users/[walletAddress]` - Update user data
 
-## Features
+### Missions  
+- `GET /api/missions` - List available missions
+- `POST /api/missions/participate` - Join mission
 
-### RewardsService
-- API + Web3 adapter unificat
-- E2E mock chain pentru testare fără wallet
-- Suport batch/sequential claim cu fallback
-- Preparare claim cu proof/signature (opțional)
+### Rewards
+- `GET /api/rewards` - List user rewards
+- `POST /api/rewards/claim` - Claim reward
 
-### NotificationProvider
-- Toasts unificate (info/success/error)
-- Auto-dismiss configurabil
-- Action buttons pentru View Tx
-- Aria-live pentru accesibilitate
+### Leaderboard
+- `GET /api/leaderboard?period=daily|weekly|monthly|all-time&category=overall|games|trading|referrals`
 
-### RewardsContext
-- Claiming per-item (evită re-render global)
-- Claim All cu batch/sequential fallback
-- Pagination cursor-based
-- BeamEffect la succes
+### Stats
+- `GET /api/stats` - Global platform statistics
+- `GET /api/health` - System health check
 
-### UI Components
-- Status badges (Claimable/Claimed/Expired)
-- Load More pentru paginație
-- Cosmic dark theme consistent
-- Responsive design
+### Agents (Background Processing)
+- `POST /api/agents/mission-manager` - Process mission progress
+- `POST /api/agents/reward-processor` - Distribute pending rewards  
+- `POST /api/agents/beam-technology` - Generate random airdrops
+- `POST /api/agents/orchestrator` - Run all agents
 
-### Chain Guards
-- Auto wallet detection
-- Network switch/add cu confirmări
-- Error mapping pentru coduri comune
-- Explorer links configurabile
+## 🛠️ Tech Stack
 
-### Test Suite
-- Jest + RTL pentru unit/integration
-- MSW pentru API mocking
-- Playwright pentru e2e cu mock chain
-- Test matrix: errors, notifications, rewards flow
+### Frontend
+- **Next.js 14** - React framework cu App Router
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling și cosmic theme
+- **Framer Motion** - Animations și beam effects
+- **Wagmi + Viem** - Web3 wallet connections
+
+### Backend
+- **Next.js API Routes** - Serverless functions
+- **MongoDB Atlas** - Database (free M0 cluster)
+- **Vercel Crons** - Automated agent execution
+- **Axios** - Internal API calls
+
+### Blockchain
+- **BNB Chain** - Smart contracts deployment
+- **Hardhat** - Development și deployment framework  
+- **Ethers.js** - Blockchain interactions
+- **Four.meme** - Token launch platform integration
+
+### Testing
+- **Jest + RTL** - Unit și integration testing
+- **Playwright** - E2E testing cu mock blockchain
+- **MSW** - API mocking pentru development
+
+## 🖒 Free Tier Optimizations
+
+### Vercel Limits Respected
+- **1M requests/month** - efficient API design
+- **2 cron jobs max** - orchestrator + processor
+- **100GB bandwidth** - optimized payloads
+- **30s function timeout** - chunked processing
+
+### MongoDB Atlas Free
+- **512MB storage** - optimized schemas
+- **Connection pooling** - singleton pattern
+- **Index optimization** - query performance
+
+### Smart Agent Design
+- **Batch processing** - 20-50 items per execution
+- **Time monitoring** - graceful timeouts
+- **Probabilistic execution** - beam technology 20% chance
+- **Error resilience** - individual failure handling
+
+## 📊 Current Status
+
+- ✅ **Frontend:** Cosmic UI cu wallet integration
+- ✅ **Backend:** Complete API suite cu MongoDB
+- ✅ **Agents:** Automated background processing
+- ✅ **Database:** Optimized schemas cu indexes
+- ✅ **Deploy Config:** Vercel-ready cu cron jobs
+- ✅ **Testing:** Comprehensive test suite
+
+**Ready for production deployment pe Vercel!** 🛸
+
+## 🔗 Links
+
+- **Repository:** [GitHub](https://github.com/Gzeu/ufo-invasions-pump-tokens)
+- **Live Demo:** [Vercel App](https://ufo-invasions-pump-tokens.vercel.app)
+- **Token on Four.meme:** [UFO Token](https://four.meme/token/0x7650a9c4543473cb0d1c73de441360bb92374444)
+- **Documentation:** [Full Docs](./ENHANCED_FEATURES.md)
+
+---
+
+**Created by:** George Pricop ([Gzeu](https://github.com/Gzeu))  
+**License:** MIT  
+**Version:** 0.2.0 MVP
