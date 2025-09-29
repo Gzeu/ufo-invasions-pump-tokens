@@ -17,11 +17,8 @@
   "crons": [
     {
       "path": "/api/agents/orchestrator",
-      "schedule": "0 */4 * * *"
-    },
-    {
-      "path": "/api/agents/reward-processor",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 0 * * *",
+      "comment": "Daily orchestrator run at midnight UTC - Hobby plan compatible"
     }
   ],
   "headers": [
