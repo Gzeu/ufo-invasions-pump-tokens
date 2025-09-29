@@ -1,185 +1,103 @@
-# 🛸 UFO Invasions: Pump Tokens
+# UFO Invasions: Missions & Rewards
 
-**The first blockchain gaming platform on BNB Chain that transforms meme token trading into a cosmic adventure with real rewards through NFTs, badges, and leaderboard system.**
+## Cerințe
+- Node.js 18+
+- NPM/Yarn
+- Wallet (Metamask) pentru interacțiuni reale (nu e necesar în e2e)
+- Contract UFOInvasionsNFT + adresă în .env
 
-<div align="center">
-  <img src="https://img.shields.io/badge/BNB%20Chain-Mainnet-yellow?style=for-the-badge&logo=binance" alt="BNB Chain">
-  <img src="https://img.shields.io/badge/Status-Development-orange?style=for-the-badge" alt="Status">
-  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License">
-</div>
+## Setup
+1) Install:
+   ```bash
+   npm install
+   ```
+2) Config:
+   ```bash
+   cp .env.example .env
+   ```
+   Setează REACT_APP_CONTRACT_ADDRESS, REACT_APP_CHAIN_ID, REACT_APP_RPC_URL, REACT_APP_EXPLORER_URL
+3) Dev (MSW activ pentru /api/rewards):
+   ```bash
+   npm start
+   ```
 
-## 🎯 Project Overview
+## Structură
+- `src/context/RewardsContext.jsx` — state, claim single/batch, beam effect
+- `src/lib/rewardsService.js` — adapter API + Web3; suport E2E mock chain
+- `src/context/NotificationContext.jsx` — notificări unificate
+- `src/components/RewardsSection.jsx`, `RewardCard.jsx` — UI
+- `src/mocks/*` — MSW handlers pentru API
+- `src/lib/chain.js` — garduri chain/wallet
+- `src/lib/errors.js` — mapare erori
 
-UFO Invasions combines **DeFi gaming** with **social engagement** to create an immersive experience where users complete cosmic missions, earn rewards, and climb the galactic leaderboard.
+## Testare
 
-### ✨ Key Features
-
-- 🚀 **Mission System**: Complete UFO token swaps, holding challenges, and social tasks
-- 🏆 **Cosmic Leaderboard**: Real-time ranking with scoring algorithm
-- 🎖️ **NFT Badge System**: Collectible achievements stored on-chain
-- 💫 **Beam Airdrops**: Random reward distribution with UFO animations
-- 👥 **Referral Program**: Earn bonuses from invited commanders
-- 📱 **Mobile-First UI**: Responsive design with cosmic theme
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Next.js 14** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling with custom cosmic theme
-- **Framer Motion** - Smooth animations and UFO effects
-- **Reown (WalletConnect)** - Multi-wallet BNB Chain integration
-
-### Backend
-- **Node.js + Express** - RESTful API server
-- **TypeScript** - Full-stack type safety
-- **Socket.io** - Real-time updates and notifications
-- **MongoDB** - User data and mission cache
-- **Redis** - Session management and leaderboard cache
-
-### Blockchain
-- **BNB Smart Chain (BSC)** - Main blockchain network
-- **Solidity** - Smart contracts for badges and rewards
-- **Hardhat** - Development and deployment framework
-- **PancakeSwap API** - Swap transaction monitoring
-- **BSCScan API** - Blockchain event tracking
-
-## 🎮 Mission Categories
-
-| Mission | Trigger | Reward | Badge | Points |
-|---------|---------|--------|---------|---------|
-| **First Contact** | First UFO swap | 100 UFO tokens | Rookie Defender | 30 |
-| **Diamond Hands** | Hold UFO 7/30 days | 300 UFO tokens | Diamond Hands | 50 |
-| **Social Invader** | Share on X/Telegram | Random beam | Promo Badge | 5 |
-| **Galactic HODLer** | Hold 30+ days | Super NFT | Collector Artifact | 100 |
-| **Alien Ambassador** | 10 referrals complete | 10% bonus rewards | Ambassador Badge | 10/referral |
-| **Mission Commander** | Complete all missions | Legendary NFT | Commander Badge | 200 |
-
-## 📁 Project Structure
-
-```
-ufo-invasions-pump-tokens/
-├── src/
-│   ├── components/          # Reusable UI components
-│   ├── pages/              # Next.js pages
-│   ├── api/                # API routes and backend logic
-│   ├── utils/              # Utility functions
-│   ├── hooks/              # Custom React hooks
-│   ├── styles/             # Global styles and themes
-│   └── types/              # TypeScript type definitions
-├── contracts/              # Smart contracts (Solidity)
-├── scripts/                # Deployment and utility scripts  
-├── tests/                  # Test suites
-├── docs/                   # Project documentation
-└── public/                 # Static assets and images
-```
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 18+ and npm/yarn
-- Git
-- MetaMask or compatible wallet
-- BNB testnet tokens for development
-
-### Installation
-
+### Unit & Integration (Jest + RTL)
 ```bash
-# Clone the repository
-git clone https://github.com/Gzeu/ufo-invasions-pump-tokens.git
-cd ufo-invasions-pump-tokens
-
-# Install dependencies
-npm install
-
-# Setup environment variables
-cp .env.example .env.local
-# Edit .env.local with your configuration
-
-# Start development server
-npm run dev
+npm test
 ```
 
-### Environment Variables
+### E2E (Playwright)
+- Rulează:
+  ```bash
+  npm run e2e
+  ```
+- Rulează cu UI:
+  ```bash
+  npm run e2e:ui
+  ```
 
-```env
-# Frontend
-NEXT_PUBLIC_CHAIN_ID=56
-NEXT_PUBLIC_RPC_URL=https://bsc-dataseed.binance.org/
+## Mock Chain (E2E)
+- `REACT_APP_E2E_MOCK_CHAIN=1` simulează tranzacțiile on-chain (fără wallet/RPC)
+- `claimOnChainSingle/Batch` returnează fake tx-uri deterministe
 
-# Backend
-MONGODB_URI=mongodb://localhost:27017/ufo-invasions
-REDIS_URL=redis://localhost:6379
+## Deploy (rezumat)
+1) Deploy contract pe chain dorit; setează adresa în .env
+2) Build frontend:
+   ```bash
+   npm run build
+   ```
+3) Deploy conținutul build/ la provider (S3/CloudFront, Vercel, Netlify, etc.)
 
-# APIs
-PANCAKESWAP_API_KEY=your_api_key
-BSCSCAN_API_KEY=your_api_key
+## Troubleshooting
+- **Wallet not detected**: instalează Metamask
+- **Wrong network**: aplicația cere switch; dacă eșuează, adaugă chain-ul
+- **Insufficient funds**: alimentează wallet-ul cu gas token
 
-# Smart Contracts
-BSC_PRIVATE_KEY=your_private_key
-CONTRACT_ADDRESS=deployed_contract_address
-```
+## Features
 
-## 📊 Development Roadmap
+### RewardsService
+- API + Web3 adapter unificat
+- E2E mock chain pentru testare fără wallet
+- Suport batch/sequential claim cu fallback
+- Preparare claim cu proof/signature (opțional)
 
-### Phase 1: MVP Foundation (30 days)
-- [x] Project setup and repository creation
-- [ ] Smart contract development
-- [ ] Backend agent core logic
-- [ ] Frontend cosmic UI implementation
-- [ ] Wallet integration
+### NotificationProvider
+- Toasts unificate (info/success/error)
+- Auto-dismiss configurabil
+- Action buttons pentru View Tx
+- Aria-live pentru accesibilitate
 
-### Phase 2: Core Features (45 days)
-- [ ] BSC testnet deployment
-- [ ] Mission validation system
-- [ ] NFT minting functionality
-- [ ] Airdrop distribution system
-- [ ] Social media integration
+### RewardsContext
+- Claiming per-item (evită re-render global)
+- Claim All cu batch/sequential fallback
+- Pagination cursor-based
+- BeamEffect la succes
 
-### Phase 3: Production Launch (30 days)
-- [ ] Mainnet deployment
-- [ ] Security audit
-- [ ] Community testing
-- [ ] Marketing campaign
-- [ ] Public launch
+### UI Components
+- Status badges (Claimable/Claimed/Expired)
+- Load More pentru paginație
+- Cosmic dark theme consistent
+- Responsive design
 
-## 🎯 Target Metrics
+### Chain Guards
+- Auto wallet detection
+- Network switch/add cu confirmări
+- Error mapping pentru coduri comune
+- Explorer links configurabile
 
-- **Active Users**: 1,000+ daily
-- **UFO Transactions**: 10,000+ weekly
-- **Missions Completed**: 50,000+ total
-- **NFTs Minted**: 5,000+ badges
-- **Social Shares**: 20,000+ monthly
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/cosmic-feature`)
-3. Commit changes (`git commit -m '🛸 Add cosmic feature'`)
-4. Push to branch (`git push origin feature/cosmic-feature`)
-5. Create a Pull Request
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🔗 Links
-
-- **Live Demo**: [ufo-token-landing.vercel.app](https://ufo-token-landing.vercel.app/)
-- **Documentation**: [Notion Workspace](https://www.notion.so/27cc2a54483581f886c0e9b0c9b63e81)
-- **Project Management**: [Linear Board](https://linear.app/gpz/project/af3d04d4-f5e9-4e9f-9b5f-cec1c60cecdd)
-- **Four.meme Platform**: [four.meme](https://four.meme/)
-
-## 🛸 Join the Invasion!
-
-Ready to become a cosmic commander? Connect your wallet and start your UFO mission today!
-
----
-
-<div align="center">
-  <p><strong>Built with 💜 for the cosmic community</strong></p>
-  <p>© 2025 UFO Invasions: Pump Tokens</p>
-</div>
+### Test Suite
+- Jest + RTL pentru unit/integration
+- MSW pentru API mocking
+- Playwright pentru e2e cu mock chain
+- Test matrix: errors, notifications, rewards flow
