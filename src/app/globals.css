@@ -1,0 +1,236 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-cosmic: 'Orbitron', monospace;
+  --ufo-glow: #00ffff;
+  --ufo-beam: #ff00ff;
+  --ufo-energy: #ffff00;
+  --space-dark: #0a0a0a;
+  --space-blue: #1a1a2e;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: linear-gradient(180deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Cosmic Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(26, 26, 46, 0.3);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #00ffff, #ff00ff);
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+}
+
+/* Custom Animations */
+@keyframes cosmic-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 255, 255, 0.6), 0 0 60px rgba(255, 0, 255, 0.3);
+  }
+}
+
+@keyframes ufo-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes beam-effect {
+  0% {
+    opacity: 0;
+    transform: translateY(-50px) scaleY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0px) scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(50px) scaleY(0);
+  }
+}
+
+@keyframes float-cosmic {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes glow-text {
+  0%, 100% {
+    text-shadow: 0 0 5px var(--ufo-glow), 0 0 10px var(--ufo-glow);
+  }
+  50% {
+    text-shadow: 0 0 10px var(--ufo-glow), 0 0 20px var(--ufo-glow), 0 0 30px var(--ufo-beam);
+  }
+}
+
+/* Utility Classes */
+.cosmic-pulse {
+  animation: cosmic-pulse 2s infinite;
+}
+
+.ufo-spin {
+  animation: ufo-spin 3s linear infinite;
+}
+
+.beam-effect {
+  animation: beam-effect 2s ease-out;
+}
+
+.float-cosmic {
+  animation: float-cosmic 4s ease-in-out infinite;
+}
+
+.glow-text {
+  animation: glow-text 3s ease-in-out infinite;
+}
+
+.cosmic-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.space-gradient {
+  background: linear-gradient(180deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+}
+
+.ufo-beam-gradient {
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 255, 255, 0.2) 50%, rgba(255, 0, 255, 0.4) 100%);
+}
+
+/* Glass Morphism Effects */
+.glass-cosmic {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.glass-ufo {
+  background: rgba(0, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+}
+
+/* Button Styles */
+.btn-cosmic {
+  @apply px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300;
+  background: linear-gradient(135deg, #00ffff 0%, #ff00ff 100%);
+  box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+}
+
+.btn-cosmic:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 255, 255, 0.4), 0 0 30px rgba(255, 0, 255, 0.2);
+}
+
+.btn-cosmic:active {
+  transform: translateY(0px);
+}
+
+/* Loading Spinner */
+.cosmic-loader {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 255, 255, 0.1);
+  border-top: 3px solid #00ffff;
+  border-radius: 50%;
+  animation: ufo-spin 1s linear infinite;
+}
+
+/* NFT Badge Styles */
+.badge-glow {
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), inset 0 0 20px rgba(255, 0, 255, 0.1);
+  border: 2px solid rgba(0, 255, 255, 0.3);
+}
+
+.badge-glow:hover {
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.7), inset 0 0 30px rgba(255, 0, 255, 0.2);
+  transform: scale(1.05);
+}
+
+/* Mission Card Effects */
+.mission-card {
+  @apply glass-cosmic rounded-xl p-6 transition-all duration-300 cursor-pointer;
+}
+
+.mission-card:hover {
+  @apply transform -translate-y-2;
+  box-shadow: 0 10px 40px rgba(0, 255, 255, 0.2);
+}
+
+/* Leaderboard Table */
+.leaderboard-row {
+  @apply glass-ufo rounded-lg mb-2 p-4 transition-all duration-300;
+}
+
+.leaderboard-row:hover {
+  background: rgba(0, 255, 255, 0.1);
+  transform: translateX(5px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .cosmic-pulse {
+    animation-duration: 1.5s;
+  }
+  
+  .float-cosmic {
+    animation-duration: 3s;
+  }
+}
+
+/* Hide scrollbar for certain elements */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Focus styles */
+.focus-cosmic:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.4);
+}
