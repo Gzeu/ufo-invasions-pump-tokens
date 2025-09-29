@@ -1,0 +1,76 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "functions": {
+    "pages/api/agents/*.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
+    "pages/api/**/*.ts": {
+      "maxDuration": 10,
+      "memory": 512
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/agents/orchestrator",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/agents/reward-processor",
+      "schedule": "*/15 * * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, x-api-key"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/api/agents/orchestrator",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/?section=leaderboard",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/api/webhook/:slug",
+      "destination": "/api/webhooks/:slug"
+    }
+  ],
+  "env": {
+    "MONGODB_URI": "@mongodb-uri",
+    "NEXT_PUBLIC_APP_URL": "@next-public-app-url",
+    "WEBHOOK_SECRET": "@webhook-secret",
+    "REACT_APP_CONTRACT_ADDRESS": "@react-app-contract-address",
+    "REACT_APP_CHAIN_ID": "@react-app-chain-id",
+    "REACT_APP_RPC_URL": "@react-app-rpc-url"
+  }
+}
