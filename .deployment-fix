@@ -1,0 +1,18 @@
+# Deployment Fix Applied
+
+## Issue: Conflicting API Routes
+Next.js detected conflicting files between pages/ and app/ directories:
+- pages/api/leaderboard.ts vs app/api/leaderboard/route.ts
+- pages/api/missions/index.ts vs app/api/missions/route.ts  
+- pages/api/rewards/index.ts vs app/api/rewards/route.ts
+
+## Solution: Keep Pages Router Structure
+- Removed src/app/api/ directory completely
+- Keeping pages/api/ structure (standard for Next.js 14)
+- All API routes now in pages/api/ only
+
+## Status: Ready for Deployment
+This fix resolves the Next.js build conflict.
+Vercel deployment should succeed now.
+
+Timestamp: 2025-09-29T14:59:00Z
