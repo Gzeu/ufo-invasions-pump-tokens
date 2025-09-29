@@ -17,11 +17,8 @@
   "crons": [
     {
       "path": "/api/agents/orchestrator",
-      "schedule": "0 */4 * * *"
-    },
-    {
-      "path": "/api/agents/reward-processor",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 0 * * *",
+      "comment": "Daily orchestrator run at midnight UTC - Hobby plan compatible"
     }
   ],
   "headers": [
@@ -54,23 +51,5 @@
       "destination": "/?section=leaderboard",
       "permanent": false
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/health",
-      "destination": "/api/health"
-    },
-    {
-      "source": "/api/webhook/:slug",
-      "destination": "/api/webhooks/:slug"
-    }
-  ],
-  "env": {
-    "MONGODB_URI": "@mongodb-uri",
-    "NEXT_PUBLIC_APP_URL": "@next-public-app-url",
-    "WEBHOOK_SECRET": "@webhook-secret",
-    "REACT_APP_CONTRACT_ADDRESS": "@react-app-contract-address",
-    "REACT_APP_CHAIN_ID": "@react-app-chain-id",
-    "REACT_APP_RPC_URL": "@react-app-rpc-url"
-  }
+  ]
 }
