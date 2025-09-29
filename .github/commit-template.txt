@@ -1,0 +1,41 @@
+# 🛸 UFO Invasions: Commit Message Template
+
+# Format: GPZ-XX: <type>(<scope>): <description>
+#
+# Example commits:
+# GPZ-82: feat(backend): implement MongoDB connection and JWT auth
+# GPZ-83: deploy(contract): add UFOInvasionsNFT to BSC testnet  
+# GPZ-84: feat(missions): implement pump detection algorithm
+# GPZ-81: ci(sync): add GitHub Actions for platform integration
+#
+# Types:
+# feat     - new feature implementation
+# fix      - bug fix
+# docs     - documentation updates
+# style    - formatting, missing semicolons, etc
+# refactor - code change that neither fixes bug nor adds feature
+# perf     - performance improvement
+# test     - adding missing tests
+# chore    - updating dependencies, build tasks
+# ci       - CI/CD pipeline changes
+# deploy   - deployment related changes
+#
+# Scopes:
+# backend  - server-side logic, APIs, database
+# frontend - React components, UI, UX
+# contract - smart contracts, blockchain
+# sync     - platform integration, workflows
+# docs     - documentation, README updates
+# test     - testing infrastructure, specs
+# devops   - CI/CD, deployment, infrastructure
+#
+# Rules:
+# - Start with GPZ-XX where XX is the Linear issue number
+# - Use imperative mood ("add" not "added")
+# - Keep first line under 50 characters
+# - Reference GitHub issues with "Closes #XX" if applicable
+# - Add detailed explanation in body if needed
+#
+# This template enables automatic synchronization between
+# GitHub commits, Linear issues, and Notion task tracking.
+
