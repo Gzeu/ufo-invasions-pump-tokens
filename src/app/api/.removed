@@ -1,0 +1,9 @@
+# API Routes Moved to pages/api/
+
+All API routes have been consolidated to pages/api/ structure to resolve Next.js 14 conflicts.
+
+This directory was causing deployment failures due to duplicate route definitions.
+
+Date: 2025-09-29
+Fix: Removed src/app/api/ completely
+Structure: All APIs now in pages/api/ only
