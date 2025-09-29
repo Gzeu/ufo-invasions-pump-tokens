@@ -1,92 +1,173 @@
-# UFO Invasions — Rewards Hardening & UX
+# 🛸 UFO Invasions: Pull Request
 
-## Context
-- Modul: Rewards (claim single/batch, toasts, garduri rețea/wallet, MSW mocks, Beam)
-- Scop: Stabilitate, UX, testabilitate end-to-end, pregătire producție
-- Task-uri conexe: GPZ-79 (Backend Agent Core), GPZ-80 (UI/UX)
+## 🗺 Linear Issue Reference
 
-## Rezumat schimbări
-- RewardsService (adapter API+Web3), E2E mock chain flag (REACT_APP_E2E_MOCK_CHAIN)
-- Garduri wallet/chain (auto switch/add chain), mapping erori ethers
-- NotificationProvider cu toasts unificate (info/success/error)
-- RewardsContext: claiming per-item, Claim All, beam effect, pagination hook
-- UI: RewardCard cu status, RewardsSection cu total + Claim All + Load More
-- MSW API mocks (list, prepare-claim, claimed)
-- Teste Jest/RTL (unit+integration) și Playwright e2e
-- README și .env.example
+**Linear Issue**: GPZ-XX <!-- Replace XX with actual issue number -->
+**Linear URL**: https://linear.app/gpz/issue/GPZ-XX/
+**Notion Task**: [Task Name](https://notion.so/link) <!-- Link to corresponding Notion task -->
 
-## Cum se testează (local)
-1) Dev cu MSW:
-   ```
-   npm start
-   ```
-2) Unit + Integration:
-   ```
-   npm test
-   ```
-3) E2E (mock chain, fără wallet):
-   ```
-   npm run e2e
-   ```
-4) Verificare UI:
-   - Your Rewards listă vizibilă
-   - Claim pe un item => toast "Transaction sent" apoi "Reward claimed successfully"
-   - Claim All => toast de succes, listă actualizată
-   - Beam effect vizibil la succes
+---
 
-## Test Matrix
-- Unit: errors mapping, NotificationProvider
-- Integration: RewardsContext + RewardsSection (listare, claim single, claim all, erori)
-- E2E: flow listare + claim single + claim all (mock chain)
-- Browsere: Chromium (Playwright). Safari/Firefox pot fi adăugate ulterior
-- Rețele: dev cu MSW (fără RPC); prod va folosi chain real din .env
+## 📋 Summary & Context
 
-## Securitate
-- Fără chei/secret în repo
-- Garduri network/wallet + mapare erori
-- Pregătit pentru EIP-712/Merkle (prepareClaim), fără a compromite fluxul default
+<!-- Brief description of what this PR accomplishes -->
+<!-- Reference the original template context if applicable -->
 
-## Performanță
-- State per-item pentru claiming (evită re-render global)
-- Pagination cursor-based
-- Virtualizare listă recomandată la >100 itemi (out-of-scope în acest PR)
+### 🎯 What's Changed
+- [ ] <!-- List main changes -->
+- [ ] <!-- Use checkboxes for clarity -->
+- [ ] <!-- Add more items as needed -->
 
-## Accesibilitate
-- Notificări cu aria-live="polite" și role="status"
-- Butoane cu state de busy și disabled clar
+### 🔗 Related Issues/PRs
+- Closes #XX <!-- If this PR closes a GitHub issue -->
+- Related to GPZ-XX <!-- If related to other Linear issues -->
+- Blocks/Blocked by: <!-- Dependencies -->
 
-## Compatibilitate
-- ABI compatibil cu claimReward(uint256)
-- Batch folosește claimRewards(uint256[]) dacă există; altfel fallback secvențial
+---
 
-## Observabilitate
-- Hook pentru evenimente (poate fi conectat la analytics):
-  rewards_list_loaded, reward_claim_clicked, reward_claim_success, reward_claim_error
+## 🧪 Testing Checklist
 
-## Rollout plan
-- Deploy frontend
-- Verificare în staging: claim single/batch pe testnet
-- Activare treptată în prod
-- Monitorizare erori și timp de confirmare
+### 💻 Code Quality
+- [ ] Code follows project style guidelines (ESLint passes)
+- [ ] No console.log statements in production code
+- [ ] TypeScript types are properly defined
+- [ ] Prettier formatting applied
+- [ ] No secrets in repository
 
-## Rollback plan
-- Revert PR
-- Dezactivare buton Claim All via feature flag UI (dacă e necesar)
+### 🧪 Unit & Integration Tests
+- [ ] New code is covered by tests
+- [ ] All existing tests pass (`npm test`)
+- [ ] Edge cases are tested
+- [ ] Error scenarios are covered
+- [ ] Jest coverage > 80% for new code
 
-## Riscuri & mitrigări
-- Schimbări ABI nealiniate -> fallback la single + error mapping
-- Wallet absent -> mesaje prietenoase; E2E mock pentru QA
-- Wrong network -> auto-switch + add chain fallback
-- Gas insuficient -> mesaj dedicat
+### 🎭 E2E Testing (if applicable)
+- [ ] Playwright tests pass (`npm run e2e`)
+- [ ] User flows work end-to-end
+- [ ] Mobile responsiveness verified
+- [ ] Cross-browser compatibility checked
+- [ ] Mock chain testing (if blockchain features)
 
-## Checklist
-- [ ] Codul compilează și trece lint
-- [ ] npm test trece
-- [ ] npm run e2e trece
-- [ ] Variabilele .env documentate și setate în CI/CD
-- [ ] Fără secrets în repo
-- [ ] Testat manual: claim single și claim all pe dev
-- [ ] README actualizat
+### 🔗 Integration Testing
+- [ ] Web3 connections work properly
+- [ ] API endpoints respond correctly (< 200ms)
+- [ ] Real-time features function
+- [ ] Database operations are optimized
+- [ ] Error handling works as expected
 
-## Screenshots/GIF
-<!-- Atașează aici câteva capturi cu lista, claim single, claim all, toasts și beam effect -->
+---
+
+## 🌐 Deployment & Production Readiness
+
+### 🔧 Environment Setup
+- [ ] Environment variables documented in .env.example
+- [ ] Dependencies updated in package.json
+- [ ] Build process succeeds (`npm run build`)
+- [ ] No breaking changes to existing APIs
+
+### 🔒 Security Review
+- [ ] No sensitive data exposed
+- [ ] Input validation implemented
+- [ ] Authentication/authorization working
+- [ ] SQL injection prevention
+- [ ] XSS protection in place
+- [ ] Wallet security best practices
+
+### 📈 Performance Impact
+- [ ] No significant performance regression
+- [ ] Database queries optimized (< 100ms)
+- [ ] Bundle size impact acceptable
+- [ ] Memory usage within limits
+- [ ] Gas optimization (if smart contract changes)
+
+---
+
+## 📱 Platform Synchronization
+
+### 🔗 Linear Integration
+- [ ] Issue status will auto-update after merge
+- [ ] Proper GPZ-XX format in title/commits
+- [ ] Estimate hours updated in Linear
+- [ ] Dependencies properly set
+- [ ] Linear issue linked in description
+
+### 📄 Notion Task Tracking
+- [ ] Task exists in [UFO Invasions Task Tracker](https://www.notion.so/3974f1b1767e452488c2b6aa4c364084)
+- [ ] Status will sync to "In Review" → "Done"
+- [ ] GitHub link updated in Notion
+- [ ] Sprint assignment correct
+- [ ] Tags properly set (Backend/Frontend/Smart Contract/etc.)
+
+### 🚀 GitHub Actions
+- [ ] Commit messages follow [template](.github/commit-template.txt)
+- [ ] Branch naming: `feature/GPZ-XX-description`
+- [ ] Actions will trigger sync workflow
+- [ ] No workflow file syntax errors
+
+---
+
+## 📄 Documentation & Communication
+
+### 📝 Updates Required
+- [ ] README.md updated (if user-facing changes)
+- [ ] CHANGELOG.md entry added
+- [ ] API documentation updated (if API changes)
+- [ ] Code comments added for complex logic
+- [ ] Notion roadmap reflects changes
+
+### 📢 Stakeholder Communication
+- [ ] Team members notified (if major changes)
+- [ ] Breaking changes communicated
+- [ ] Migration steps documented (if applicable)
+
+---
+
+## 🎆 Feature-Specific Checks
+
+### 🎮 Game Features (if applicable)
+- [ ] Mission system logic correct
+- [ ] XP calculation working
+- [ ] Leaderboard updates properly
+- [ ] Badge minting functions
+- [ ] Reward distribution accurate
+
+### 💰 Smart Contract (if applicable)
+- [ ] Contract compilation successful
+- [ ] Security audit checklist completed
+- [ ] Gas usage optimized
+- [ ] Event emission proper
+- [ ] Testnet deployment verified
+
+### 🎨 UI/UX (if applicable)
+- [ ] Cosmic theme consistency
+- [ ] Animation performance smooth
+- [ ] Responsive design works
+- [ ] Accessibility standards met
+- [ ] Loading states implemented
+
+---
+
+## 🔍 Review & Deployment
+
+### 🗂 Review Notes
+<!-- Add any specific notes for reviewers -->
+<!-- Mention if this PR requires special attention -->
+<!-- List any known limitations or future improvements -->
+
+### 🕰 Timeline
+- **Estimated Review Time**: <!-- e.g., 2-4 hours -->
+- **Target Merge Date**: <!-- e.g., October 1, 2025 -->
+- **Deployment Window**: <!-- e.g., After 6 PM EEST -->
+
+### 🚀 Post-Merge Actions
+- [ ] Verify deployment success on staging
+- [ ] Monitor for errors/regressions
+- [ ] Update Linear issue to "Done"
+- [ ] Update Notion task status
+- [ ] Announce in team channels (if major feature)
+
+---
+
+**🞆 Sync Status**: This PR will automatically update Linear issue `GPZ-XX` and Notion task when merged.
+
+**📈 Tracking**: [Linear Issue](https://linear.app/gpz/issue/GPZ-XX) | [Notion Task](https://notion.so/link) | [GitHub Actions](../../actions)
