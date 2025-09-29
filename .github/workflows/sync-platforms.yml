@@ -1,0 +1,239 @@
+name: 🔄 Sync Platforms (Linear ↔ Notion ↔ GitHub)
+
+on:
+  issues:
+    types: [opened, closed, edited, labeled]
+  pull_request:
+    types: [opened, closed, merged, edited, review_requested]
+  push:
+    branches: [main, develop]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      force_sync:
+        description: 'Force full synchronization'
+        required: false
+        default: 'false'
+
+jobs:
+  sync-linear-notion:
+    runs-on: ubuntu-latest
+    name: 🔗 Sync Linear ↔ Notion
+    
+    steps:
+      - name: 📋 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: 📊 Extract Issue/PR Information
+        id: extract-info
+        run: |
+          echo "event_name=${{ github.event_name }}" >> $GITHUB_OUTPUT
+          echo "action=${{ github.event.action }}" >> $GITHUB_OUTPUT
+          
+          if [ "${{ github.event_name }}" == "issues" ]; then
+            echo "issue_number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+            echo "issue_title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+            echo "issue_state=${{ github.event.issue.state }}" >> $GITHUB_OUTPUT
+            echo "issue_url=${{ github.event.issue.html_url }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "pr_title=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
+            echo "pr_state=${{ github.event.pull_request.state }}" >> $GITHUB_OUTPUT
+            echo "pr_url=${{ github.event.pull_request.html_url }}" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: 🔍 Extract Linear ID from Title
+        id: linear-id
+        run: |
+          TITLE=""
+          if [ "${{ github.event_name }}" == "issues" ]; then
+            TITLE="${{ github.event.issue.title }}"
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            TITLE="${{ github.event.pull_request.title }}"
+          fi
+          
+          # Extract GPZ-XX pattern
+          LINEAR_ID=$(echo "$TITLE" | grep -oE 'GPZ-[0-9]+' | head -1 || echo "")
+          echo "linear_id=$LINEAR_ID" >> $GITHUB_OUTPUT
+          echo "Found Linear ID: $LINEAR_ID"
+          
+      - name: 📋 Update Notion Task Database
+        if: steps.linear-id.outputs.linear_id != ''
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        run: |
+          cat << 'EOF' > sync-notion.js
+          const { Client } = require('@notionhq/client');
+          
+          const notion = new Client({
+            auth: process.env.NOTION_TOKEN,
+          });
+          
+          async function updateNotionTask() {
+            try {
+              const databaseId = process.env.NOTION_DATABASE_ID;
+              const linearId = process.env.LINEAR_ID;
+              const eventName = process.env.EVENT_NAME;
+              const action = process.env.ACTION;
+              const itemUrl = process.env.ITEM_URL;
+              
+              // Search for existing task with Linear ID
+              const response = await notion.databases.query({
+                database_id: databaseId,
+                filter: {
+                  property: 'Linear ID',
+                  rich_text: {
+                    equals: linearId
+                  }
+                }
+              });
+              
+              let status = 'Backlog';
+              if (eventName === 'pull_request' && action === 'opened') {
+                status = 'In Progress';
+              } else if (eventName === 'pull_request' && action === 'merged') {
+                status = 'Done';
+              } else if (eventName === 'issues' && action === 'closed') {
+                status = 'Done';
+              }
+              
+              if (response.results.length > 0) {
+                // Update existing task
+                const pageId = response.results[0].id;
+                await notion.pages.update({
+                  page_id: pageId,
+                  properties: {
+                    'Status': {
+                      select: {
+                        name: status
+                      }
+                    },
+                    'GitHub Link': {
+                      url: itemUrl
+                    },
+                    'Last Updated': {
+                      date: {
+                        start: new Date().toISOString()
+                      }
+                    }
+                  }
+                });
+                console.log(`Updated Notion task for ${linearId}`);
+              } else {
+                console.log(`No Notion task found for ${linearId}`);
+              }
+              
+            } catch (error) {
+              console.error('Error updating Notion:', error);
+            }
+          }
+          
+          updateNotionTask();
+          EOF
+          
+          npm install @notionhq/client
+          
+          export LINEAR_ID="${{ steps.linear-id.outputs.linear_id }}"
+          export EVENT_NAME="${{ github.event_name }}"
+          export ACTION="${{ steps.extract-info.outputs.action }}"
+          
+          if [ "${{ github.event_name }}" == "issues" ]; then
+            export ITEM_URL="${{ steps.extract-info.outputs.issue_url }}"
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            export ITEM_URL="${{ steps.extract-info.outputs.pr_url }}"
+          fi
+          
+          node sync-notion.js
+          
+      - name: 📢 Update Linear Issue Status
+        if: steps.linear-id.outputs.linear_id != '' && github.event_name == 'pull_request'
+        env:
+          LINEAR_TOKEN: ${{ secrets.LINEAR_TOKEN }}
+        run: |
+          cat << 'EOF' > sync-linear.js
+          const axios = require('axios');
+          
+          async function updateLinearIssue() {
+            try {
+              const linearId = process.env.LINEAR_ID;
+              const action = process.env.ACTION;
+              const prUrl = process.env.PR_URL;
+              
+              if (action === 'opened') {
+                // Add comment to Linear issue with PR link
+                const query = `
+                  mutation {
+                    commentCreate(
+                      input: {
+                        issueId: "${linearId}"
+                        body: "🚀 Pull Request created: ${prUrl}\n\n*Automated update from GitHub*"
+                      }
+                    ) {
+                      success
+                    }
+                  }
+                `;
+                
+                await axios.post('https://api.linear.app/graphql', {
+                  query
+                }, {
+                  headers: {
+                    'Authorization': `Bearer ${process.env.LINEAR_TOKEN}`,
+                    'Content-Type': 'application/json'
+                  }
+                });
+                
+                console.log(`Added PR comment to Linear issue ${linearId}`);
+              }
+              
+            } catch (error) {
+              console.error('Error updating Linear:', error.response?.data || error.message);
+            }
+          }
+          
+          updateLinearIssue();
+          EOF
+          
+          npm install axios
+          
+          export LINEAR_ID="${{ steps.linear-id.outputs.linear_id }}"
+          export ACTION="${{ steps.extract-info.outputs.action }}"
+          export PR_URL="${{ steps.extract-info.outputs.pr_url }}"
+          
+          node sync-linear.js
+          
+      - name: 🎆 Deployment Success Notification
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "🚀 Main branch updated - triggering deployment pipeline"
+          echo "Commit: ${{ github.event.head_commit.message }}"
+          echo "Author: ${{ github.event.head_commit.author.name }}"
+
+  sync-status-report:
+    runs-on: ubuntu-latest
+    name: 📈 Generate Sync Report
+    needs: sync-linear-notion
+    if: always()
+    
+    steps:
+      - name: 📄 Create Sync Summary
+        run: |
+          echo "### 🔄 Platform Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Event**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Action**: ${{ github.event.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository**: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.sync-linear-notion.result }}" == "success" ]; then
+            echo "**Sync Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Sync Status**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
