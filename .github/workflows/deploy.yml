@@ -1,0 +1,183 @@
+name: 🛸 UFO Invasions CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    name: 🧪 Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install Dependencies
+        run: npm ci
+
+      - name: 🛡️ Security Audit
+        run: npm audit --audit-level high
+
+      - name: 📝 Lint Code
+        run: npm run lint
+
+      - name: 🔍 Type Check
+        run: npm run type-check
+
+      - name: 🧪 Run Tests
+        run: npm test
+
+      - name: 🏗️ Build Project
+        run: npm run build
+
+      - name: 🔐 Smart Contract Tests
+        run: npx hardhat test
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+
+  deploy-testnet:
+    name: 🚀 Deploy to BSC Testnet
+    if: github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    environment: testnet
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install Dependencies
+        run: npm ci
+
+      - name: 🌐 Deploy to BSC Testnet
+        run: |
+          echo "🛸 Starting UFO Invasions deployment to BSC Testnet..."
+          npx hardhat run scripts/deploy.ts --network bscTestnet
+          echo "✅ Deployment completed successfully!"
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          BSCSCAN_API_KEY: ${{ secrets.BSCSCAN_API_KEY }}
+
+      - name: 📁 Upload Deployment Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: testnet-deployment
+          path: deployments/
+          retention-days: 30
+
+      - name: 🔔 Discord Notification
+        if: always()
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            🛸 **UFO Invasions Testnet Deployment**
+            Status: ${{ job.status }}
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref }}
+            🔗 View: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  security-scan:
+    name: 🔒 Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Run Slither Analysis
+        uses: crytic/slither-action@v0.3.0
+        id: slither
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📊 Upload SARIF Results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
+
+  gas-report:
+    name: ⛽ Gas Usage Report
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install Dependencies
+        run: npm ci
+
+      - name: ⛽ Generate Gas Report
+        run: |
+          npx hardhat test --gas-reporter
+          echo "Gas report generated successfully!"
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+
+  deploy-mainnet:
+    name: 🌟 Deploy to BSC Mainnet
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[MAINNET]')
+    needs: [test, deploy-testnet, security-scan]
+    runs-on: ubuntu-latest
+    environment: mainnet
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install Dependencies
+        run: npm ci
+
+      - name: 🌟 Deploy to BSC Mainnet
+        run: |
+          echo "🛸 Starting UFO Invasions MAINNET deployment..."
+          npx hardhat run scripts/deploy.ts --network bscMainnet
+          echo "🎉 MAINNET deployment completed successfully!"
+        env:
+          PRIVATE_KEY: ${{ secrets.MAINNET_PRIVATE_KEY }}
+          BSCSCAN_API_KEY: ${{ secrets.BSCSCAN_API_KEY }}
+
+      - name: 📁 Upload Mainnet Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: mainnet-deployment
+          path: deployments/
+          retention-days: 90
+
+      - name: 🎉 Success Notification
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            🎉 **UFO INVASIONS MAINNET LIVE!** 🛸
+            ✅ Smart contract deployed successfully
+            🔗 Contract verified on BSCScan
+            📊 Gas optimized deployment
+            🚀 Ready for launch!
