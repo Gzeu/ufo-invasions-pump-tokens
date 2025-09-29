@@ -1,0 +1,86 @@
+{
+  "name": "UFO Invasions Smart Contract Configuration",
+  "version": "1.0.0",
+  "description": "Production deployment configuration for UFOInvasionsNFT contract",
+  "networks": {
+    "bscTestnet": {
+      "chainId": 97,
+      "rpcUrl": "https://data-seed-prebsc-1-s1.binance.org:8545/",
+      "explorer": "https://testnet.bscscan.com/",
+      "faucet": "https://testnet.binance.org/faucet-smart",
+      "gasPrice": "10000000000",
+      "usdtAddress": "0x7ef95a0FEE0Dd31b22626fA2e10Ee6A223F8a684",
+      "ready": true
+    },
+    "bscMainnet": {
+      "chainId": 56,
+      "rpcUrl": "https://bsc-dataseed1.binance.org/",
+      "explorer": "https://bscscan.com/",
+      "gasPrice": "5000000000",
+      "usdtAddress": "0x55d398326f99059fF775485246999027B3197955",
+      "ready": false
+    }
+  },
+  "contracts": {
+    "UFOInvasionsNFT": {
+      "type": "ERC721",
+      "features": [
+        "Enumerable",
+        "URI Storage",
+        "Reentrancy Guard",
+        "Ownable",
+        "Pausable"
+      ],
+      "mintPrices": {
+        "SCOUT_SHIP": "0.001",
+        "BATTLE_CRUISER": "0.01",
+        "MOTHERSHIP": "0.05",
+        "SPECIAL_EDITION": "0.1"
+      },
+      "badges": [
+        "PUMP_HUNTER",
+        "DEGEN_EXPLORER",
+        "COSMIC_WHALE",
+        "TREND_RIDER",
+        "SOCIAL_SCOUT",
+        "DIAMOND_HANDS",
+        "ALPHA_FINDER",
+        "GUILD_MASTER"
+      ]
+    }
+  },
+  "deployment": {
+    "status": "ready",
+    "priority": "high",
+    "requirements": {
+      "testnetBNB": "0.1 BNB minimum",
+      "bscscanApiKey": "required for verification",
+      "privateKey": "deployer wallet private key"
+    },
+    "steps": [
+      "Get testnet BNB from faucet",
+      "Deploy UFOInvasionsNFT contract",
+      "Configure mint prices",
+      "Add authorized minters",
+      "Verify contract on BSCScan",
+      "Test all functions",
+      "Update environment variables"
+    ]
+  },
+  "monitoring": {
+    "endpoints": {
+      "health": "/api/health",
+      "contract": "/api/contract/status",
+      "rewards": "/api/rewards",
+      "leaderboard": "/api/leaderboard"
+    },
+    "metrics": [
+      "total_nfts_minted",
+      "rewards_distributed",
+      "active_missions",
+      "user_engagement"
+    ]
+  },
+  "lastUpdated": "2025-09-30T01:22:00Z",
+  "author": "George Pricop (Gzeu)"
+}
