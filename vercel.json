@@ -17,8 +17,7 @@
   "crons": [
     {
       "path": "/api/agents/orchestrator",
-      "schedule": "0 0 * * *",
-      "comment": "Daily orchestrator run at midnight UTC - Hobby plan compatible"
+      "schedule": "0 0 * * *"
     }
   ],
   "headers": [
