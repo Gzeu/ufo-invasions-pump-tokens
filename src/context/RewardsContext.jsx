@@ -1,86 +1,185 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { ethers } from "ethers";
-import UFOInvasionsABI from "../abis/UFOInvasionsNFT.json";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import { rewardsService } from "../lib/rewardsService";
+import { useNotifications } from "./NotificationContext";
+import BeamEffect from "../components/BeamEffect";
 
 const RewardsContext = createContext(null);
-const CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS;
-
-function getContract(providerOrSigner) {
-  return new ethers.Contract(CONTRACT_ADDRESS, UFOInvasionsABI.abi, providerOrSigner);
-}
 
 export function RewardsProvider({ children }) {
   const [rewards, setRewards] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [claiming, setClaiming] = useState(false);
+  const [claimingIds, setClaimingIds] = useState(() => new Set());
   const [error, setError] = useState(null);
-  const [toastMsg, setToastMsg] = useState(null);
+  const [beamKey, setBeamKey] = useState(null);
 
-  // Fetch rewards - mock or from backend
-  useEffect(() => {
-    async function fetchRewards() {
-      setLoading(true);
-      try {
-        // TODO: Replace with real API/backend call here
-        const data = [
-          { id: 1, type: "Mission Reward", amount: "50 UFO", date: Date.now() - 86400000 },
-          { id: 2, type: "Staking Reward", amount: "20 UFO", date: Date.now() - 172800000 }
-        ];
-        setRewards(data);
-        setError(null);
-      } catch (e) {
-        setError(e);
-      } finally {
-        setLoading(false);
-      }
+  const { showInfo, showSuccess, showError } = useNotifications();
+
+  const loadRewards = useCallback(async ({ cursor } = {}) => {
+    setLoading(true);
+    try {
+      const address = await getAddressIfConnected();
+      const { rewards: list, nextCursor, totalClaimable } = await rewardsService.listRewards({ address, cursor });
+      setRewards((prev) => cursor ? [...prev, ...list] : list);
+      setNextCursor(nextCursor);
+      setError(null);
+      return { totalClaimable };
+    } catch (e) {
+      setError(e);
+      return {};
+    } finally {
+      setLoading(false);
     }
-    fetchRewards();
   }, []);
 
-  // Toast function
-  const showToast = useCallback((msg, duration = 4000) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), duration);
-  }, []);
+  useEffect(() => {
+    loadRewards();
+  }, [loadRewards]);
+
+  const totalClaimable = useMemo(() => {
+    return rewards
+      .filter(r => r.status === "claimable")
+      .reduce((acc, r) => acc + (Number(r.amount?.value) || 0), 0);
+  }, [rewards]);
 
   const claimReward = useCallback(async (rewardId) => {
+    if (claimingIds.has(rewardId)) return;
+    setClaimingIds((prev) => new Set(prev.add(rewardId)));
     try {
-      setClaiming(true);
-      setError(null);
-      if (!window.ethereum) throw new Error("Wallet not detected");
+      const address = await getAddressOrRequest();
+      const prepared = await safePrepare({ address, rewardId });
+      const tx = await rewardsService.claimOnChainSingle({ rewardId, prepared });
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
-      const contract = getContract(signer);
+      showInfo("Transaction sent: awaiting confirmation…", { duration: 3000 });
 
-      // Ex: contract.claimReward(rewardId)
-      const tx = await contract.claimReward(rewardId);
-      showToast("Transaction sent. Waiting confirmation...");
-      await tx.wait();
+      const confirmations = Number(process.env.REACT_APP_TX_CONFIRMATIONS || 2);
+      await tx.wait(confirmations);
 
-      setRewards(prev => prev.filter(r => r.id !== rewardId));
-      showToast("Reward claimed successfully!");
+      setRewards((prev) => prev.filter(r => r.id !== rewardId));
+      setBeamKey(`${rewardId}-${Date.now()}`);
+      showSuccess("Reward claimed successfully!", {
+        duration: 4000,
+        action: {
+          label: "View Tx",
+          onClick: () => window.open(getExplorerUrl(tx.hash), "_blank")
+        }
+      });
+
+      await rewardsService.syncStatus({ rewardId, txHash: tx.hash });
     } catch (e) {
       console.error(e);
-      setError(e);
-      showToast(`Error: ${e.message || e.toString()}`);
+      showError(e.message || String(e));
     } finally {
-      setClaiming(false);
+      setClaimingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(rewardId);
+        return next;
+      });
     }
-  }, [showToast]);
+  }, [claimingIds, showInfo, showSuccess, showError]);
+
+  const claimAll = useCallback(async () => {
+    const ids = rewards.filter(r => r.status === "claimable").map(r => r.id);
+    if (!ids.length) return;
+
+    setClaimingIds(new Set(ids));
+    try {
+      const address = await getAddressOrRequest();
+      const preparedById = {};
+      for (const id of ids) {
+        try { preparedById[id] = await safePrepare({ address, rewardId: id }); } catch { preparedById[id] = null; }
+      }
+
+      const result = await rewardsService.claimOnChainBatch({ rewardIds: ids, preparedById });
+
+      if (result.mode === "batch") {
+        const tx = result.tx;
+        showInfo("Batch transaction sent: awaiting confirmation…");
+        const confirmations = Number(process.env.REACT_APP_TX_CONFIRMATIONS || 2);
+        await tx.wait(confirmations);
+        setRewards((prev) => prev.filter(r => !ids.includes(r.id)));
+        setBeamKey(`batch-${Date.now()}`);
+        showSuccess(`Claimed ${ids.length} rewards`, {
+          action: { label: "View Tx", onClick: () => window.open(getExplorerUrl(tx.hash), "_blank") }
+        });
+        await Promise.all(ids.map(id => rewardsService.syncStatus({ rewardId: id, txHash: tx.hash })));
+      } else {
+        const okIds = [];
+        for (const { id, tx } of result.results) {
+          try {
+            const confirmations = Number(process.env.REACT_APP_TX_CONFIRMATIONS || 2);
+            await tx.wait(confirmations);
+            okIds.push(id);
+            await rewardsService.syncStatus({ rewardId: id, txHash: tx.hash });
+          } catch (e) {
+            console.error("Sequential claim failed", id, e);
+          }
+        }
+        if (okIds.length) {
+          setRewards((prev) => prev.filter(r => !okIds.includes(r.id)));
+          setBeamKey(`batch-seq-${Date.now()}`);
+          showSuccess(`Claimed ${okIds.length}/${ids.length} rewards`);
+        } else {
+          showError("Failed to claim rewards. Please try again.");
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      showError(e.message || String(e));
+    } finally {
+      setClaimingIds(new Set());
+    }
+  }, [rewards, showInfo, showSuccess, showError]);
+
+  const value = {
+    rewards,
+    loading,
+    error,
+    claimingIds,
+    totalClaimable,
+    loadMore: () => nextCursor ? loadRewards({ cursor: nextCursor }) : null,
+    claimReward,
+    claimAll
+  };
 
   return (
-    <RewardsContext.Provider value={{ rewards, loading, claimReward, claiming, error, toastMsg, showToast }}>
+    <RewardsContext.Provider value={value}>
       {children}
+      <BeamEffect triggerKey={beamKey} />
     </RewardsContext.Provider>
   );
 }
 
 export function useRewards() {
-  const context = useContext(RewardsContext);
-  if (!context) {
-    throw new Error("useRewards must be used within RewardsProvider");
+  const ctx = useContext(RewardsContext);
+  if (!ctx) throw new Error("useRewards must be used within RewardsProvider");
+  return ctx;
+}
+
+// Helpers
+async function getAddressIfConnected() {
+  if (!window.ethereum) return null;
+  try {
+    const accounts = await window.ethereum.request({ method: "eth_accounts" });
+    return accounts?.[0] || null;
+  } catch {
+    return null;
   }
-  return context;
+}
+async function getAddressOrRequest() {
+  if (!window.ethereum) throw new Error("Wallet not detected");
+  const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+  if (!accounts || !accounts[0]) throw new Error("Wallet not connected");
+  return accounts[0];
+}
+async function safePrepare({ address, rewardId }) {
+  try {
+    return await rewardsService.prepareClaim({ address, rewardId });
+  } catch {
+    return null;
+  }
+}
+function getExplorerUrl(hash) {
+  const base = process.env.REACT_APP_EXPLORER_URL || "https://bscscan.com";
+  return `${base}/tx/${hash}`;
 }
