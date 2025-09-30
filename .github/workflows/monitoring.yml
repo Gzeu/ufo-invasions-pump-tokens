@@ -1,0 +1,203 @@
+name: 📊 UFO Invasions Monitoring
+on:
+  schedule:
+    - cron: '*/15 * * * *' # Every 15 minutes
+    - cron: '0 */6 * * *'   # Every 6 hours for detailed checks
+  workflow_dispatch: # Manual trigger
+
+env:
+  APP_URL: ${{ secrets.APP_URL || 'https://ufo-invasions-pump-tokens.vercel.app' }}
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+jobs:
+  health-check:
+    name: 🐈‍⬛ Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 🎯 API Health Check
+        run: |
+          echo "🔍 Starting health checks..."
+          
+          # Core API endpoints
+          curl -f -s -w "Health: %{http_code}\n" $APP_URL/api/health || exit 1
+          curl -f -s -w "Missions: %{http_code}\n" $APP_URL/api/missions || exit 1
+          curl -f -s -w "Leaderboard: %{http_code}\n" $APP_URL/api/leaderboard || exit 1
+          curl -f -s -w "Rewards: %{http_code}\n" $APP_URL/api/rewards || exit 1
+          
+          echo "✅ All endpoints healthy"
+
+      - name: 📊 Response Time Check
+        run: |
+          HEALTH_TIME=$(curl -o /dev/null -s -w "%{time_total}" $APP_URL/api/health)
+          echo "Health endpoint response time: ${HEALTH_TIME}s"
+          
+          if (( $(echo "$HEALTH_TIME > 2.0" | bc -l) )); then
+            echo "⚠️ Warning: Slow response time detected"
+          else
+            echo "✅ Response time acceptable"
+          fi
+
+      - name: 🔗 Database Connectivity
+        run: |
+          DB_STATUS=$(curl -s $APP_URL/api/health | jq -r '.checks.database')
+          echo "Database status: $DB_STATUS"
+          
+          if [ "$DB_STATUS" != "connected" ]; then
+            echo "❌ Database connection failed"
+            exit 1
+          fi
+
+  performance-check:
+    name: 🏁 Performance Check
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 */6 * * *' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏁 Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          configPath: './lighthouserc.js'
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: 📊 Performance Metrics
+        run: |
+          echo "Collecting performance metrics..."
+          
+          # API latency test
+          for endpoint in "/api/health" "/api/missions" "/api/leaderboard"; do
+            TIME=$(curl -o /dev/null -s -w "%{time_total}" $APP_URL$endpoint)
+            echo "$endpoint: ${TIME}s"
+          done
+
+  smart-contract-check:
+    name: 📜 Contract Monitoring
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 */6 * * *' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔗 Contract Status Check
+        run: |
+          echo "Checking smart contract status..."
+          
+          # Check if contract is deployed and accessible
+          CONTRACT_STATUS=$(curl -s $APP_URL/api/health | jq -r '.checks.smartContracts')
+          echo "Contract status: $CONTRACT_STATUS"
+          
+          if [ "$CONTRACT_STATUS" != "active" ]; then
+            echo "⚠️ Warning: Smart contract status not optimal"
+          fi
+
+      - name: 📊 Gas Price Monitoring
+        run: |
+          echo "Monitoring BSC gas prices..."
+          GAS_PRICE=$(curl -s "https://api.bscscan.com/api?module=gastracker&action=gasoracle&apikey=${{ secrets.BSCSCAN_API_KEY }}" | jq -r '.result.SafeGasPrice')
+          echo "Current safe gas price: ${GAS_PRICE} gwei"
+          
+          if (( GAS_PRICE > 20 )); then
+            echo "⚠️ High gas prices detected: ${GAS_PRICE} gwei"
+          fi
+
+  uptime-alert:
+    name: 🚨 Uptime Alert
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: [health-check, performance-check, smart-contract-check]
+    steps:
+      - name: 📢 Slack Alert
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          text: |
+            🚨 **UFO Invasions Alert**
+            
+            ❌ System health check failed
+            Time: $(date)
+            
+            Please investigate immediately:
+            - Check application logs
+            - Verify database connectivity
+            - Monitor smart contract status
+            
+            Dashboard: ${{ env.APP_URL }}
+
+      - name: 📊 Create Issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Production Alert: System Health Check Failed',
+              body: `
+              ## 🚨 Production Alert
+              
+              **Time:** ${new Date().toISOString()}
+              **Status:** System health check failed
+              **Workflow:** ${{ github.workflow }}
+              **Run ID:** ${{ github.run_id }}
+              
+              ### 🔍 Investigation Needed:
+              - [ ] Check application logs
+              - [ ] Verify database connectivity  
+              - [ ] Monitor smart contract status
+              - [ ] Review performance metrics
+              
+              ### 🔗 Resources:
+              - [Workflow Run](${context.payload.repository.html_url}/actions/runs/${{ github.run_id }})
+              - [Application](${process.env.APP_URL})
+              - [Health Endpoint](${process.env.APP_URL}/api/health)
+              
+              **Auto-generated by monitoring workflow**
+              `,
+              labels: ['bug', 'production', 'high-priority', 'auto-generated']
+            });
+
+  success-report:
+    name: ✅ Success Report
+    runs-on: ubuntu-latest
+    if: success()
+    needs: [health-check]
+    steps:
+      - name: 📊 Log Success
+        run: |
+          echo "✅ All monitoring checks passed"
+          echo "Timestamp: $(date)"
+          echo "App URL: $APP_URL"
+          echo "Status: Healthy"
+
+      - name: 📈 Update Metrics
+        run: |
+          # Log successful check to metrics (could be sent to analytics service)
+          echo "{
+            \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+            \"status\": \"healthy\",
+            \"checks_passed\": true,
+            \"app_url\": \"$APP_URL\"
+          }" > monitoring-result.json
+          
+          echo "Monitoring result logged successfully"
