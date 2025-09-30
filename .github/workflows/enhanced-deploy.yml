@@ -1,0 +1,206 @@
+name: 🛸 UFO Invasions Enhanced Deploy
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    name: 🧪 Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔍 TypeScript check
+        run: npm run type-check
+
+      - name: 🧹 Lint check
+        run: npm run lint
+
+      - name: 🏗️ Build check
+        run: npm run build
+
+      - name: 🧪 Run tests
+        run: npm run test:coverage
+
+      - name: 📊 Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔒 Run security audit
+        run: npm audit --audit-level high
+
+      - name: 🕵️ Dependency check
+        uses: dependabot/dependabot-core@v1
+        with:
+          package-manager: npm
+
+  smart-contracts:
+    name: 📜 Smart Contract Deployment
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [test, security-scan]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔧 Setup Hardhat config
+        run: |
+          echo "PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}" >> .env
+          echo "BSCSCAN_API_KEY=${{ secrets.BSCSCAN_API_KEY }}" >> .env
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env
+
+      - name: 🚀 Deploy to BSC Testnet
+        run: |
+          npx hardhat run scripts/deploy.ts --network bscTestnet
+          echo "CONTRACT_ADDRESS=$(cat deployments/bscTestnet/UFOInvasionsNFT.json | jq -r '.address')" >> $GITHUB_ENV
+
+      - name: ✅ Verify contract on BSCScan
+        run: |
+          npx hardhat verify --network bscTestnet $CONTRACT_ADDRESS
+
+      - name: 💾 Save deployment artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: contract-deployments
+          path: |
+            deployments/
+            artifacts/
+
+      - name: 📢 Notify deployment
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          text: |
+            🛸 UFO Invasions Smart Contract Deployment
+            Status: ${{ job.status }}
+            Contract: ${{ env.CONTRACT_ADDRESS }}
+            Network: BSC Testnet
+
+  frontend-deploy:
+    name: 🌐 Frontend Deployment
+    needs: [smart-contracts]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 📄 Download contract artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: contract-deployments
+
+      - name: 🏗️ Build application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_CONTRACT_ADDRESS: ${{ env.CONTRACT_ADDRESS }}
+          NEXT_PUBLIC_CHAIN_ID: 97
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+      - name: 🚀 Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-args: '--prod'
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+
+      - name: 🏥 Health check
+        run: |
+          sleep 30
+          curl -f ${{ secrets.APP_URL }}/api/health
+
+      - name: 📢 Notify success
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: |
+            🎉 UFO Invasions Deployment Complete!
+            Frontend: ${{ secrets.APP_URL }}
+            Contract: ${{ env.CONTRACT_ADDRESS }}
+            Version: ${{ github.sha }}
+
+  post-deploy:
+    name: 🔄 Post-Deploy Tasks  
+    needs: [frontend-deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🌱 Database seeding
+        run: |
+          npm run db:init
+          npm run seed
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+      - name: 🧪 E2E tests
+        run: npm run e2e
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ secrets.APP_URL }}
+
+      - name: 📊 Update metrics
+        run: |
+          echo "Deployment completed at $(date)" >> deployment.log
+          echo "Contract: ${{ env.CONTRACT_ADDRESS }}" >> deployment.log
+
+      - name: 🎯 Update Linear task
+        uses: linear/action-linear@v1
+        with:
+          api-key: ${{ secrets.LINEAR_API_KEY }}
+          issue-id: "GPZ-85"
+          comment: |
+            🚀 **Automated Deployment Complete!**
+            
+            ✅ Smart Contract: ${{ env.CONTRACT_ADDRESS }}
+            ✅ Frontend: ${{ secrets.APP_URL }}
+            ✅ E2E Tests: Passed
+            ✅ Database: Initialized
+            
+            Deployment completed automatically via GitHub Actions.
