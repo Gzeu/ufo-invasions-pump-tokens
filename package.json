@@ -1,6 +1,6 @@
 {
   "name": "ufo-invasions-pump-tokens",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "🛸 UFO Invasions: Pump Tokens - Blockchain gaming platform on BNB Chain with mission system",
   "private": true,
   "scripts": {
@@ -18,24 +18,29 @@
     "db:test": "node scripts/test-db-connection.js",
     "seed": "tsx scripts/seed-missions.ts",
     "agents:run": "node scripts/run-agents-local.js",
-    "health:check": "curl -f http://localhost:3000/api/health || exit 1"
+    "health:check": "curl -f http://localhost:3000/api/health || exit 1",
+    "postinstall": "npm audit --audit-level moderate || true",
+    "security:audit": "npm audit --audit-level high",
+    "security:fix": "npm audit fix --force",
+    "deploy:contracts": "tsx scripts/deploy-contracts.ts",
+    "verify:deployment": "node scripts/verify-deployment.js"
   },
   "dependencies": {
-    "@next/font": "^14.0.0",
+    "@next/font": "^14.2.0",
     "@reown/appkit": "^1.0.0",
     "@reown/appkit-adapter-wagmi": "^1.0.0",
     "@tanstack/react-query": "^5.0.0",
     "@vercel/analytics": "^1.0.0",
-    "axios": "^1.6.0",
+    "axios": "^1.7.0",
     "clsx": "^2.0.0",
-    "date-fns": "^2.29.0",
+    "date-fns": "^3.0.0",
     "ethers": "^6.14.0",
-    "framer-motion": "^10.16.0",
+    "framer-motion": "^11.0.0",
     "js-cookie": "^3.0.5",
     "mongodb": "^6.3.0",
     "mongoose": "^8.0.0",
     "nanoid": "^5.0.0",
-    "next": "14.0.0",
+    "next": "^14.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.0",
@@ -56,13 +61,13 @@
     "@types/node": "^20.8.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "@typescript-eslint/eslint-plugin": "^6.9.0",
-    "@typescript-eslint/parser": "^6.9.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
     "autoprefixer": "^10.4.0",
     "cross-env": "^7.0.3",
     "dotenv": "^16.3.0",
     "eslint": "^8.52.0",
-    "eslint-config-next": "14.0.0",
+    "eslint-config-next": "14.2.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
     "hardhat": "^2.19.0",
@@ -76,8 +81,8 @@
     "typescript": "^5.2.0"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": ">=18.17.0",
+    "npm": ">=9.0.0"
   },
   "keywords": [
     "blockchain",
@@ -91,7 +96,9 @@
     "vercel",
     "agents",
     "missions",
-    "rewards"
+    "rewards",
+    "automation",
+    "production"
   ],
   "author": {
     "name": "George Pricop",
