@@ -1,10 +1,17 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install",
   "devCommand": "npm run dev",
   "functions": {
+    "src/pages/api/agents/*.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
+    "src/pages/api/**/*.ts": {
+      "maxDuration": 10,
+      "memory": 512
+    },
     "pages/api/agents/*.ts": {
       "maxDuration": 30,
       "memory": 1024
@@ -50,5 +57,10 @@
       "destination": "/?section=leaderboard",
       "permanent": false
     }
-  ]
+  ],
+  "env": {
+    "MONGODB_URI": "@mongodb_uri",
+    "NEXT_PUBLIC_BSC_RPC": "@next_public_bsc_rpc",
+    "NEXT_PUBLIC_CONTRACT_ADDRESS": "@next_public_contract_address"
+  }
 }
